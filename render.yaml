@@ -1,0 +1,29 @@
+# render.yaml — Blueprint for exonyBack (adjust region/plan if you want)
+# Commit this file to the root of the main branch and then click "Retry" in Render.
+services:
+  - type: web
+    name: exony-back
+    env: node
+    branch: main
+    plan: starter
+    # Build with dev deps available (npm ci installs devDeps during build)
+    buildCommand: npm ci && npm run build
+    # render-start runs build + prisma generate + db push + seed + start (defined in package.json)
+    # You can keep this, or change to "npm run start" and run migrations as a one-off job (recommended).
+    startCommand: npm run render-start
+    # Link the service to the database created below and inject the connection string as DATABASE_URL
+    databases:
+      - name: exony-mysql
+        alias: DATABASE_URL
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Do NOT put secrets here. The DATABASE_URL will be injected from the 'databases' section above.
+      # Add other env vars here if needed (e.g. JWT_SECRET), or add them later in the Render dashboard.
+
+databases:
+  - name: exony-mysql
+    engine: mysql
+    version: "8"
+    plan: starter
+    # region: oregon  # optional: uncomment & change if you want a specific region
