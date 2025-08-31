@@ -1,29 +1,41 @@
-# render.yaml — Blueprint for exonyBack (adjust region/plan if you want)
-# Commit this file to the root of the main branch and then click "Retry" in Render.
+# render.yaml — corrected for exonyBack (MySQL as a private service)
+# - This blueprint creates:
+#    1) a Node web service (exony-back)
+#    2) a private service running MySQL (exony-mysql) from the render-examples/mysql repo
+# Notes:
+# - You will be prompted to provide any "sync: false" secrets during the initial Blueprint creation.
+# - After the initial creation, set DATABASE_URL in the web service env (see instructions below).
+
 services:
   - type: web
+    runtime: node
     name: exony-back
-    env: node
     branch: main
     plan: starter
-    # Build with dev deps available (npm ci installs devDeps during build)
     buildCommand: npm ci && npm run build
-    # render-start runs build + prisma generate + db push + seed + start (defined in package.json)
-    # You can keep this, or change to "npm run start" and run migrations as a one-off job (recommended).
-    startCommand: npm run render-start
-    # Link the service to the database created below and inject the connection string as DATABASE_URL
-    databases:
-      - name: exony-mysql
-        alias: DATABASE_URL
+    # Use `npm run start` in production to avoid running migrations/seeds on every deploy.
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
-      # Do NOT put secrets here. The DATABASE_URL will be injected from the 'databases' section above.
-      # Add other env vars here if needed (e.g. JWT_SECRET), or add them later in the Render dashboard.
+      # Prompt Render to ask for the connection string during blueprint creation.
+      - key: DATABASE_URL
+        sync: false
 
-databases:
-  - name: exony-mysql
-    engine: mysql
-    version: "8"
+  # MySQL as a private service (uses Render's example MySQL repo)
+  - type: pserv
+    runtime: docker
+    name: exony-mysql
+    repo: https://github.com/render-examples/mysql
+    branch: main
     plan: starter
-    # region: oregon  # optional: uncomment & change if you want a specific region
+    envVars:
+      - key: MYSQL_DATABASE
+        value: exony
+      - key: MYSQL_USER
+        value: exony
+      # Ask Render to prompt you for these secrets during initial Blueprint creation:
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_ROOT_PASSWORD
+        sync: false
